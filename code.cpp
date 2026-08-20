@@ -1,8 +1,85 @@
-#include "int2048.h"
+#pragma once
+#ifndef SJTU_BIGINTEGER
+#define SJTU_BIGINTEGER
+
+// Do not use any header files other than the following
+#include <complex>
+#include <cstdio>
+#include <cstring>
+#include <iostream>
+#include <vector>
 
 namespace sjtu {
 
-void int2048::trim() {
+class int2048 {
+private:
+  int sign; // 1 for >= 0, -1 for < 0
+  std::vector<int> a; // digits in base 10^9 (little endian: a[0] is lowest)
+
+  static const int BASE = 1000000000;
+  static const int BASE_DIGITS = 9;
+
+  void trim();
+  static int compare_abs(const int2048 &x, const int2048 &y);
+  static int2048 add_abs(const int2048 &x, const int2048 &y);
+  static int2048 sub_abs(const int2048 &x, const int2048 &y); // assumes |x| >= |y|
+  static int2048 mul_small(const int2048 &x, const int2048 &y);
+  static int2048 mul_ntt(const int2048 &x, const int2048 &y);
+  static int2048 div_knuth(const int2048 &x, const int2048 &y, int2048 &r);
+  static void div_mod_abs(const int2048 &x, const int2048 &y, int2048 &q, int2048 &r);
+
+public:
+  // Constructors
+  int2048();
+  int2048(long long);
+  int2048(const std::string &);
+  int2048(const int2048 &);
+
+  // Integer1
+  void read(const std::string &);
+  void print();
+
+  int2048 &add(const int2048 &);
+  friend int2048 add(int2048, const int2048 &);
+
+  int2048 &minus(const int2048 &);
+  friend int2048 minus(int2048, const int2048 &);
+
+  // Integer2
+  int2048 operator+() const;
+  int2048 operator-() const;
+
+  int2048 &operator=(const int2048 &);
+
+  int2048 &operator+=(const int2048 &);
+  friend int2048 operator+(int2048, const int2048 &);
+
+  int2048 &operator-=(const int2048 &);
+  friend int2048 operator-(int2048, const int2048 &);
+
+  int2048 &operator*=(const int2048 &);
+  friend int2048 operator*(int2048, const int2048 &);
+
+  int2048 &operator/=(const int2048 &);
+  friend int2048 operator/(int2048, const int2048 &);
+
+  int2048 &operator%=(const int2048 &);
+  friend int2048 operator%(int2048, const int2048 &);
+
+  friend std::istream &operator>>(std::istream &, int2048 &);
+  friend std::ostream &operator<<(std::ostream &, const int2048 &);
+
+  friend bool operator==(const int2048 &, const int2048 &);
+  friend bool operator!=(const int2048 &, const int2048 &);
+  friend bool operator<(const int2048 &, const int2048 &);
+  friend bool operator>(const int2048 &, const int2048 &);
+  friend bool operator<=(const int2048 &, const int2048 &);
+  friend bool operator>=(const int2048 &, const int2048 &);
+};
+
+// Implementations
+
+inline void int2048::trim() {
   while (a.size() > 1 && a.back() == 0) {
     a.pop_back();
   }
@@ -15,9 +92,9 @@ void int2048::trim() {
   }
 }
 
-int2048::int2048() : sign(1), a(1, 0) {}
+inline int2048::int2048() : sign(1), a(1, 0) {}
 
-int2048::int2048(long long v) {
+inline int2048::int2048(long long v) {
   if (v < 0) {
     sign = -1;
     v = -v;
@@ -34,13 +111,13 @@ int2048::int2048(long long v) {
   }
 }
 
-int2048::int2048(const std::string &s) {
+inline int2048::int2048(const std::string &s) {
   read(s);
 }
 
-int2048::int2048(const int2048 &o) : sign(o.sign), a(o.a) {}
+inline int2048::int2048(const int2048 &o) : sign(o.sign), a(o.a) {}
 
-void int2048::read(const std::string &s) {
+inline void int2048::read(const std::string &s) {
   a.clear();
   sign = 1;
   if (s.empty()) {
@@ -73,7 +150,7 @@ void int2048::read(const std::string &s) {
   trim();
 }
 
-void int2048::print() {
+inline void int2048::print() {
   if (sign == -1 && !(a.size() == 1 && a[0] == 0)) {
     putchar('-');
   }
@@ -83,7 +160,7 @@ void int2048::print() {
   }
 }
 
-int int2048::compare_abs(const int2048 &x, const int2048 &y) {
+inline int int2048::compare_abs(const int2048 &x, const int2048 &y) {
   if (x.a.size() != y.a.size()) {
     return x.a.size() < y.a.size() ? -1 : 1;
   }
@@ -95,7 +172,7 @@ int int2048::compare_abs(const int2048 &x, const int2048 &y) {
   return 0;
 }
 
-int2048 int2048::add_abs(const int2048 &x, const int2048 &y) {
+inline int2048 int2048::add_abs(const int2048 &x, const int2048 &y) {
   int2048 res;
   res.a.clear();
   long long carry = 0;
@@ -117,8 +194,7 @@ int2048 int2048::add_abs(const int2048 &x, const int2048 &y) {
   return res;
 }
 
-int2048 int2048::sub_abs(const int2048 &x, const int2048 &y) {
-  // assumes |x| >= |y|
+inline int2048 int2048::sub_abs(const int2048 &x, const int2048 &y) {
   int2048 res;
   res.a.clear();
   long long borrow = 0;
@@ -141,7 +217,7 @@ int2048 int2048::sub_abs(const int2048 &x, const int2048 &y) {
 // Integer1
 // ===================================
 
-int2048 &int2048::add(const int2048 &o) {
+inline int2048 &int2048::add(const int2048 &o) {
   if (sign == o.sign) {
     int2048 res = add_abs(*this, o);
     res.sign = sign;
@@ -162,11 +238,11 @@ int2048 &int2048::add(const int2048 &o) {
   return *this;
 }
 
-int2048 add(int2048 a, const int2048 &b) {
+inline int2048 add(int2048 a, const int2048 &b) {
   return a.add(b);
 }
 
-int2048 &int2048::minus(const int2048 &o) {
+inline int2048 &int2048::minus(const int2048 &o) {
   if (sign != o.sign) {
     int2048 res = add_abs(*this, o);
     res.sign = sign;
@@ -187,7 +263,7 @@ int2048 &int2048::minus(const int2048 &o) {
   return *this;
 }
 
-int2048 minus(int2048 a, const int2048 &b) {
+inline int2048 minus(int2048 a, const int2048 &b) {
   return a.minus(b);
 }
 
@@ -195,11 +271,11 @@ int2048 minus(int2048 a, const int2048 &b) {
 // Integer2
 // ===================================
 
-int2048 int2048::operator+() const {
+inline int2048 int2048::operator+() const {
   return *this;
 }
 
-int2048 int2048::operator-() const {
+inline int2048 int2048::operator-() const {
   int2048 res(*this);
   if (!(res.a.size() == 1 && res.a[0] == 0)) {
     res.sign = -res.sign;
@@ -207,7 +283,7 @@ int2048 int2048::operator-() const {
   return res;
 }
 
-int2048 &int2048::operator=(const int2048 &o) {
+inline int2048 &int2048::operator=(const int2048 &o) {
   if (this != &o) {
     sign = o.sign;
     a = o.a;
@@ -215,24 +291,24 @@ int2048 &int2048::operator=(const int2048 &o) {
   return *this;
 }
 
-int2048 &int2048::operator+=(const int2048 &o) {
+inline int2048 &int2048::operator+=(const int2048 &o) {
   return add(o);
 }
 
-int2048 operator+(int2048 a, const int2048 &b) {
+inline int2048 operator+(int2048 a, const int2048 &b) {
   return a.add(b);
 }
 
-int2048 &int2048::operator-=(const int2048 &o) {
+inline int2048 &int2048::operator-=(const int2048 &o) {
   return minus(o);
 }
 
-int2048 operator-(int2048 a, const int2048 &b) {
+inline int2048 operator-(int2048 a, const int2048 &b) {
   return a.minus(b);
 }
 
 // Multiplication: Small & NTT
-int2048 int2048::mul_small(const int2048 &x, const int2048 &y) {
+inline int2048 int2048::mul_small(const int2048 &x, const int2048 &y) {
   int2048 res;
   res.a.assign(x.a.size() + y.a.size(), 0);
   for (size_t i = 0; i < x.a.size(); i++) {
@@ -248,56 +324,11 @@ int2048 int2048::mul_small(const int2048 &x, const int2048 &y) {
   return res;
 }
 
-// NTT Implementation
 namespace ntt_ops {
-  const int MOD = 998244353;
-  const int G = 3;
-
-  long long qpow(long long a, long long b) {
-    long long res = 1;
-    a %= MOD;
-    while (b > 0) {
-      if (b & 1) res = res * a % MOD;
-      a = a * a % MOD;
-      b >>= 1;
-    }
-    return res;
-  }
-
-  void ntt(std::vector<int> &a, int n, int opt) {
-    std::vector<int> rev(n);
-    for (int i = 0; i < n; i++) {
-      rev[i] = (rev[i >> 1] >> 1) | ((i & 1) ? (n >> 1) : 0);
-      if (i < rev[i]) std::swap(a[i], a[rev[i]]);
-    }
-    for (int len = 2; len <= n; len <<= 1) {
-      int m = len >> 1;
-      long long wn = qpow(G, (MOD - 1) / len);
-      if (opt == -1) wn = qpow(wn, MOD - 2);
-      for (int i = 0; i < n; i += len) {
-        long long w = 1;
-        for (int j = 0; j < m; j++) {
-          long long u = a[i + j];
-          long long v = (long long)a[i + j + m] * w % MOD;
-          a[i + j] = (u + v) % MOD;
-          a[i + j + m] = (u - v + MOD) % MOD;
-          w = w * wn % MOD;
-        }
-      }
-    }
-    if (opt == -1) {
-      long long inv = qpow(n, MOD - 2);
-      for (int i = 0; i < n; i++) {
-        a[i] = (long long)a[i] * inv % MOD;
-      }
-    }
-  }
-
-  // 3-mod NTT for large coefficients
   const int M1 = 998244353, M2 = 1004535809, M3 = 469762049;
-  const long long M12 = 1002772198720536577LL; // M1 * M2
+  const long long M12 = 1002772198720536577LL;
 
-  long long qpow_m(long long a, long long b, int mod) {
+  inline long long qpow_m(long long a, long long b, int mod) {
     long long res = 1;
     a %= mod;
     while (b > 0) {
@@ -308,7 +339,7 @@ namespace ntt_ops {
     return res;
   }
 
-  void ntt_custom(std::vector<int> &a, int n, int opt, int mod, int g) {
+  inline void ntt_custom(std::vector<int> &a, int n, int opt, int mod, int g) {
     std::vector<int> rev(n);
     for (int i = 0; i < n; i++) {
       rev[i] = (rev[i >> 1] >> 1) | ((i & 1) ? (n >> 1) : 0);
@@ -338,11 +369,7 @@ namespace ntt_ops {
   }
 }
 
-int2048 int2048::mul_ntt(const int2048 &x, const int2048 &y) {
-  // To avoid overflow in 3-mod NTT or single NTT:
-  // Split each base-10^9 limb into 3 base-10^3 limbs (or 2 base-10^4 limbs).
-  // Base 10^4 limbs: max product sum ~ len * (10^4)^2. For len=500000/4 ~ 125000, 125000 * 10^8 = 1.25 * 10^13, fits in 3 moduli M1*M2*M3 ~ 4.7 * 10^26.
-  // Actually Base 10^3: 3 limbs per 10^9 limb.
+inline int2048 int2048::mul_ntt(const int2048 &x, const int2048 &y) {
   const int SBASE = 1000;
   std::vector<int> a_split, b_split;
   a_split.reserve(x.a.size() * 3);
@@ -389,7 +416,6 @@ int2048 int2048::mul_ntt(const int2048 &x, const int2048 &y) {
   for (int i = 0; i < n; i++) a3[i] = (long long)a3[i] * b3[i] % M3;
   ntt_custom(a3, n, -1, M3, 3);
 
-  // CRT combine
   long long inv_M1_M2 = qpow_m(M1, M2 - 2, M2);
   long long inv_M12_M3 = qpow_m(M12 % M3, M3 - 2, M3);
 
@@ -401,17 +427,13 @@ int2048 int2048::mul_ntt(const int2048 &x, const int2048 &y) {
 
     long long t1 = ((x2 - x1) % M2 + M2) % M2;
     t1 = t1 * inv_M1_M2 % M2;
-    long long x12 = x1 + t1 * M1; // exact value mod M1*M2
+    long long x12 = x1 + t1 * M1;
 
     long long t2 = ((x3 - (x12 % M3)) % M3 + M3) % M3;
     t2 = t2 * inv_M12_M3 % M3;
-    // exact result x = x12 + t2 * M12
-    // Since max value < 500000 * 1000 * 1000 = 5 * 10^11, which is much smaller than M1*M2 ~ 10^18,
-    // x12 is already exact!
     conv[i] = x12;
   }
 
-  // Now recombine conv into base 10^9
   int2048 res;
   res.a.clear();
   __int128 carry = 0;
@@ -428,12 +450,12 @@ int2048 int2048::mul_ntt(const int2048 &x, const int2048 &y) {
   return res;
 }
 
-int2048 &int2048::operator*=(const int2048 &o) {
+inline int2048 &int2048::operator*=(const int2048 &o) {
   *this = *this * o;
   return *this;
 }
 
-int2048 operator*(int2048 a, const int2048 &b) {
+inline int2048 operator*(int2048 a, const int2048 &b) {
   if ((a.a.size() == 1 && a.a[0] == 0) || (b.a.size() == 1 && b.a[0] == 0)) {
     return int2048(0);
   }
@@ -445,8 +467,7 @@ int2048 operator*(int2048 a, const int2048 &b) {
 }
 
 // Division Implementation
-int2048 int2048::div_knuth(const int2048 &x, const int2048 &y, int2048 &r) {
-  // Knuth's Algorithm D (assumes x >= 0, y > 0)
+inline int2048 int2048::div_knuth(const int2048 &x, const int2048 &y, int2048 &r) {
   if (compare_abs(x, y) < 0) {
     r = x;
     return int2048(0);
@@ -466,12 +487,10 @@ int2048 int2048::div_knuth(const int2048 &x, const int2048 &y, int2048 &r) {
     return q;
   }
 
-  // General Knuth D
   int n = y.a.size();
   int m = x.a.size() - n;
   int d = BASE / (y.a.back() + 1);
 
-  // u = x * d, v = y * d
   std::vector<long long> u(x.a.size() + 1, 0);
   long long carry = 0;
   for (size_t i = 0; i < x.a.size(); i++) {
@@ -503,7 +522,6 @@ int2048 int2048::div_knuth(const int2048 &x, const int2048 &y, int2048 &r) {
       if (r_hat >= BASE) break;
     }
 
-    // Multiply and subtract: u[j..j+n] -= q_hat * v[0..n-1]
     long long borrow = 0;
     for (int i = 0; i < n; i++) {
       long long p = q_hat * v[i] + borrow;
@@ -518,7 +536,6 @@ int2048 int2048::div_knuth(const int2048 &x, const int2048 &y, int2048 &r) {
     }
     if (u[j + n] < borrow) {
       u[j + n] += BASE - borrow;
-      // Over-estimated q_hat, add back
       q_hat--;
       long long c = 0;
       for (int i = 0; i < n; i++) {
@@ -537,7 +554,6 @@ int2048 int2048::div_knuth(const int2048 &x, const int2048 &y, int2048 &r) {
   res_q.a = q;
   res_q.trim();
 
-  // Remainder u / d
   int2048 res_r;
   res_r.a.resize(n);
   long long rem = 0;
@@ -551,34 +567,29 @@ int2048 int2048::div_knuth(const int2048 &x, const int2048 &y, int2048 &r) {
   return res_q;
 }
 
-void int2048::div_mod_abs(const int2048 &x, const int2048 &y, int2048 &q, int2048 &r) {
+inline void int2048::div_mod_abs(const int2048 &x, const int2048 &y, int2048 &q, int2048 &r) {
   q = div_knuth(x, y, r);
 }
 
-int2048 &int2048::operator/=(const int2048 &o) {
+inline int2048 &int2048::operator/=(const int2048 &o) {
   *this = *this / o;
   return *this;
 }
 
-int2048 operator/(int2048 a, const int2048 &b) {
-  // Floor division: x / y = floor(x / y)
-  // Let |x| = q * |y| + r with 0 <= r < |y|
+inline int2048 operator/(int2048 a, const int2048 &b) {
   int2048 q, r;
   int2048::div_mod_abs(a, b, q, r);
 
   if (a.sign == b.sign) {
-    // Result positive
     q.sign = 1;
     q.trim();
     return q;
   } else {
-    // Result negative
     if (r.a.size() == 1 && r.a[0] == 0) {
       q.sign = -1;
       q.trim();
       return q;
     } else {
-      // Round toward negative infinity: -(q + 1)
       q = q + int2048(1);
       q.sign = -1;
       q.trim();
@@ -587,17 +598,16 @@ int2048 operator/(int2048 a, const int2048 &b) {
   }
 }
 
-int2048 &int2048::operator%=(const int2048 &o) {
+inline int2048 &int2048::operator%=(const int2048 &o) {
   *this = *this % o;
   return *this;
 }
 
-int2048 operator%(int2048 a, const int2048 &b) {
-  // x % y = x - (x / y) * y
+inline int2048 operator%(int2048 a, const int2048 &b) {
   return a - (a / b) * b;
 }
 
-std::istream &operator>>(std::istream &is, int2048 &x) {
+inline std::istream &operator>>(std::istream &is, int2048 &x) {
   std::string s;
   if (is >> s) {
     x.read(s);
@@ -605,7 +615,7 @@ std::istream &operator>>(std::istream &is, int2048 &x) {
   return is;
 }
 
-std::ostream &operator<<(std::ostream &os, const int2048 &x) {
+inline std::ostream &operator<<(std::ostream &os, const int2048 &x) {
   if (x.sign == -1 && !(x.a.size() == 1 && x.a[0] == 0)) {
     os << '-';
   }
@@ -618,32 +628,34 @@ std::ostream &operator<<(std::ostream &os, const int2048 &x) {
   return os;
 }
 
-bool operator==(const int2048 &x, const int2048 &y) {
+inline bool operator==(const int2048 &x, const int2048 &y) {
   if (x.a.size() == 1 && x.a[0] == 0 && y.a.size() == 1 && y.a[0] == 0) return true;
   return x.sign == y.sign && x.a == y.a;
 }
 
-bool operator!=(const int2048 &x, const int2048 &y) {
+inline bool operator!=(const int2048 &x, const int2048 &y) {
   return !(x == y);
 }
 
-bool operator<(const int2048 &x, const int2048 &y) {
+inline bool operator<(const int2048 &x, const int2048 &y) {
   if (x == y) return false;
   if (x.sign != y.sign) return x.sign < y.sign;
   int cmp = int2048::compare_abs(x, y);
   return x.sign == 1 ? cmp < 0 : cmp > 0;
 }
 
-bool operator>(const int2048 &x, const int2048 &y) {
+inline bool operator>(const int2048 &x, const int2048 &y) {
   return y < x;
 }
 
-bool operator<=(const int2048 &x, const int2048 &y) {
+inline bool operator<=(const int2048 &x, const int2048 &y) {
   return !(y < x);
 }
 
-bool operator>=(const int2048 &x, const int2048 &y) {
+inline bool operator>=(const int2048 &x, const int2048 &y) {
   return !(x < y);
 }
 
 } // namespace sjtu
+
+#endif
